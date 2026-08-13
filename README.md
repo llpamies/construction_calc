@@ -34,7 +34,7 @@ already have and edits it in place.
 | Notations | `6ft 3in`, `6' 3"`, `5'-6"`, `6 feet 3 inches`, `6 ft. 3 in.`, `5’ 6”`, `5' 6''` |
 | Without spaces | `6ft3in`, `12ft6in`, `5'6"` — and a number glued to a feet mark is inches, so `5'6` and `6ft2` work too |
 | Numbers | integers, decimals (`6.5 ft`, `.5 in`), fractions (`1/2 in`), mixed (`3 1/2 in`) |
-| Scattered parts | `6ft, 3in and 1/2` reads as one measurement of 6&nbsp;ft&nbsp;3½&nbsp;in |
+| Scattered parts | `6ft, 3in and 1/2` reads as one measurement of 6&nbsp;ft&nbsp;3½&nbsp;in, and the answer keeps that shape — `6ft, 3in and 3/4`, not `6ft, 3 3/4in` |
 | Surrounding prose | `Order 3 of the 6 ft 2 in posts` reads as 6&nbsp;ft&nbsp;2&nbsp;in — the `3` is left alone |
 
 Two rules keep it honest:

@@ -153,7 +153,7 @@
       end: token.end,
       parts: { ft: null, in: null },
       lastUnit: token.unit,
-      style: { ft: null, in: null, sep: null },
+      style: { ft: null, in: null, sep: null, tail: null },
       tokens: [token]
     };
     g.parts[token.unit] = token.value;
@@ -197,6 +197,12 @@
       if (group.style.sep === null) group.style.sep = gap;
       group.lastUnit = 'in';
     } else {
+      // A fraction written apart from its unit ("3in and 1/2"). Remember the
+      // wording so the answer can be put back the same shape instead of
+      // collapsing into "3 1/2in".
+      if (group.style.tail === null) {
+        group.style.tail = { sep: gap, on: group.lastUnit };
+      }
       group.parts[group.lastUnit] = add(group.parts[group.lastUnit], token.value);
     }
     group.end = token.end;
@@ -353,7 +359,17 @@
     var pieces = [];
     if (d.showFeet) pieces.push(renderPart(d.feet, 0, 1, ftStyle));
     if (d.whole > 0 || d.fracNum > 0 || pieces.length === 0) {
-      pieces.push(renderPart(d.whole, d.fracNum, d.fracDen, inStyle));
+      // When the source wrote its fraction apart from the inches, echo that
+      // shape back: "3in and 1/2" stays "3in and 3/4", not "3 3/4in". Only
+      // for a fraction hung off the inches; a fraction of a foot has no
+      // clean equivalent once the answer has moved.
+      var tail = style.tail;
+      if (tail && tail.on === 'in' && d.fracNum > 0) {
+        pieces.push(renderPart(d.whole, 0, 1, inStyle) +
+                    tail.sep + d.fracNum + '/' + d.fracDen);
+      } else {
+        pieces.push(renderPart(d.whole, d.fracNum, d.fracDen, inStyle));
+      }
     }
 
     return (d.negative && d.ticks !== 0 ? '-' : '') + pieces.join(sep);

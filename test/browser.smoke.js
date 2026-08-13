@@ -44,6 +44,10 @@ var DIR = path.resolve(__dirname, '..');
         }
         return {
           prose: ap('I am 6ft, 3in and 1/2 tall', '1/2 in'),
+          scattered: ap('I am 6ft, 3in and 10/32 tall', '7/16 in'),
+          scatteredCarry: ap('6ft, 3in and 3/4', '1/2 in'),
+          scatteredGone: ap('I am 6ft, 3in and 1/2 tall', '1/2 in'),
+          inlineMixed: ap('6ft, 3 1/2in', '1/4 in'),
           symbol: ap('The beam is 5\'-6" long', '3 1/2 in'),
           subtract: ap('cut the 8 ft 0 in stud', '3 1/4 in', 'subtract'),
           carry: ap('6 ft 11 in', '2 in'),
@@ -74,6 +78,12 @@ var DIR = path.resolve(__dirname, '..');
       });
 
       check('prose preserved', engine.prose, 'I am 6ft, 4in tall');
+      check('scattered fraction keeps its shape', engine.scattered,
+            'I am 6ft, 3in and 3/4 tall');
+      check('scattered fraction carries', engine.scatteredCarry, '6ft, 4in and 1/4');
+      check('scattered clause drops on a whole inch', engine.scatteredGone,
+            'I am 6ft, 4in tall');
+      check('inline mixed number stays inline', engine.inlineMixed, '6ft, 3 3/4in');
       check('symbol notation echoed', engine.symbol, 'The beam is 5\'-9 1/2" long');
       check('subtract', engine.subtract, 'cut the 7 ft 8 3/4 in stud');
       check('carry into feet', engine.carry, '7 ft 1 in');

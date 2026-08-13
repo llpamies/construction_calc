@@ -104,13 +104,39 @@ check('unrelated fraction ignored', inches('The 6 ft board costs 1/2 the price')
  * Adding and subtracting, preserving surrounding text
  * ---------------------------------------------------------------- */
 
+// A fraction written apart from the inches keeps that shape on the way out.
 check('add, prose preserved',
   apply('I am 6ft, 3in and 1/2 tall', '1 in'),
-  'I am 6ft, 4 1/2in tall');
+  'I am 6ft, 4in and 1/2 tall');
 
+check('scattered fraction, reported by a user',
+  apply('I am 6ft, 3in and 10/32 tall', '7/16 in'),
+  'I am 6ft, 3in and 3/4 tall');
+
+check('scattered fraction with word units',
+  apply('6 feet 3 inches and 1/4', '1/4 in'),
+  '6 feet 3 inches and 1/2');
+
+check('scattered fraction survives a carry into the next inch',
+  apply('6ft, 3in and 3/4', '1/2 in'),
+  '6ft, 4in and 1/4');
+
+// ...but when the answer lands on a whole inch there is no fraction to hang,
+// so the trailing clause simply goes away.
 check('add, collapsing the scattered fraction',
   apply('I am 6ft, 3in and 1/2 tall', '1/2 in'),
   'I am 6ft, 4in tall');
+
+// A fraction hung off the feet has no clean echo, so it falls back.
+check('fraction on feet falls back to the plain shape',
+  apply('6 ft and 1/2', '1 in'),
+  '6 ft 7 in');
+
+// A mixed number written inline is not a scattered fraction and must not
+// gain an "and".
+check('inline mixed number stays inline',
+  apply('6ft, 3 1/2in', '1/4 in'),
+  '6ft, 3 3/4in');
 
 check('add to symbol notation',
   apply('The beam is 5\'-6" long', '3 1/2 in'),
