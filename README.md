@@ -5,7 +5,14 @@ or subtract, and get your text back with only the measurement changed.
 
 **→ [Open the calculator](https://llpamies.github.io/construction_calc/)**
 
-![Screenshot of the calculator](screenshot.png)
+![The calculator in light theme](screenshot.png)
+
+<details>
+<summary>Dark theme</summary>
+
+![The calculator in dark theme](screenshot-dark.png)
+
+</details>
 
 ```
 I am 6ft, 3in and 1/2 tall     + 1/2 in    →    I am 6ft, 4in tall
