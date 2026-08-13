@@ -124,6 +124,42 @@ var DIR = path.resolve(__dirname, '..');
             'graduated in 1/64"');
       await page.selectOption('#precision', '16');
 
+      // rounding direction
+      check('defaults to nearest', await page.inputValue('#rounding'), 'nearest');
+      await page.fill('#text', 'a 2 in board');
+      await page.fill('#amount', '1/3 in');
+      check('nearest result', await page.locator('#result').textContent(),
+            'a 2 5/16 in board');
+      await page.selectOption('#rounding', 'up');
+      check('up result', await page.locator('#result').textContent(),
+            'a 2 3/8 in board');
+      check('caption names the direction', await page.locator('#tape-scale').textContent(),
+            'graduated in 1/16" · rounded up');
+      await page.selectOption('#rounding', 'down');
+      check('down result', await page.locator('#result').textContent(),
+            'a 2 5/16 in board');
+
+      // The equation must reconcile: the amount is 1/3, not a distorted 5/16,
+      // and the answer is flagged approximate because rounding moved it.
+      check('equation shows operands exactly',
+            await page.locator('.arith .equation').textContent(),
+            '2 in + 1/3 in = ≈ 2 5/16 in');
+      check('amount readout is undistorted',
+            await page.locator('#amount-readout').textContent(), '= 1/3 in');
+
+      // a value already on a graduation must not move in any direction
+      await page.fill('#amount', '1/4 in');
+      var onTick = [];
+      for (var m of ['nearest', 'up', 'down']) {
+        await page.selectOption('#rounding', m);
+        onTick.push(await page.locator('#result').textContent());
+      }
+      check('exact value unmoved by direction', onTick.join('|'),
+            'a 2 1/4 in board|a 2 1/4 in board|a 2 1/4 in board');
+      await page.selectOption('#rounding', 'nearest');
+      check('caption drops direction on nearest',
+            await page.locator('#tape-scale').textContent(), 'graduated in 1/16"');
+
       // error path
       await page.fill('#text', 'an 8 ft wall and a 3 ft door');
       var note = await page.locator('#text-readout').textContent();

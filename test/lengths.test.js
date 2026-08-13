@@ -173,6 +173,82 @@ check('error surfaces on ambiguous first input',
   'multiple');
 
 /* ---------------------------------------------------------------- *
+ * Rounding direction
+ * ---------------------------------------------------------------- */
+
+function fmt(text, denom, mode) {
+  var p = L.parse(text, { allowBareNumber: true });
+  return L.formatInches(p.inches, { ft: null, in: { mark: ' in', space: '' }, sep: ' ' },
+                        denom, mode);
+}
+
+// 1/3 in at 1/16 sits between 5/16 and 6/16.
+check('nearest rounds down when below half', fmt('1/3 in', 16, 'nearest'), '5/16 in');
+check('up always climbs',                    fmt('1/3 in', 16, 'up'),      '3/8 in');
+check('down always drops',                   fmt('1/3 in', 16, 'down'),    '5/16 in');
+
+// 7/12 in at 1/16 is 9.33/16 — nearest goes down, up goes to 10/16.
+check('nearest rounds down from .33', fmt('7/12 in', 16, 'nearest'), '9/16 in');
+check('up from .33',                  fmt('7/12 in', 16, 'up'),      '5/8 in');
+
+// 5/8 in at 1/16 is exactly 10/16: no direction may move it.
+check('exact value unmoved by nearest', fmt('5/8 in', 16, 'nearest'), '5/8 in');
+check('exact value unmoved by up',      fmt('5/8 in', 16, 'up'),      '5/8 in');
+check('exact value unmoved by down',    fmt('5/8 in', 16, 'down'),    '5/8 in');
+
+// The float trap: 0.7 in * 10 / 10 must not compute as 6.99999 and floor to 6.
+check('decimal on a graduation is not dropped', fmt('0.5 in', 2, 'down'), '1/2 in');
+check('decimal tenth rounds down cleanly',      fmt('0.7 in', 10, 'down'), '7/10 in');
+
+// Rounding up may carry into the next whole inch, and on into feet.
+check('up carries into the next inch', fmt('2 15/16 in', 2, 'up'), '3 in');
+check('down drops to the whole inch',  fmt('2 15/16 in', 2, 'down'), '2 1/2 in');
+
+check('up carries into feet',
+  L.formatInches(L.parse('11 7/8 in', {}).inches,
+                 { ft: { mark: ' ft', space: '' }, in: { mark: ' in', space: '' }, sep: ' ' },
+                 2, 'up'),
+  '1 ft');
+
+// Direction is signed: up means longer, down means shorter, below zero too.
+check('down on a negative moves away from zero',
+  L.formatInches(L.sub(L.rat(0, 1), L.rat(1, 3)),
+                 { ft: null, in: { mark: ' in', space: '' }, sep: ' ' }, 16, 'down'),
+  '-3/8 in');
+check('up on a negative shortens the magnitude',
+  L.formatInches(L.sub(L.rat(0, 1), L.rat(1, 3)),
+                 { ft: null, in: { mark: ' in', space: '' }, sep: ' ' }, 16, 'up'),
+  '-5/16 in');
+
+// Rounding up can cross zero into a clean zero rather than a tiny negative.
+check('up from just below zero reaches zero',
+  L.formatInches(L.sub(L.rat(0, 1), L.rat(1, 100)),
+                 { ft: null, in: { mark: ' in', space: '' }, sep: ' ' }, 16, 'up'),
+  '0 in');
+
+// Through applyDelta, the direction applies to the result.
+check('applyDelta rounds up',
+  (function () {
+    var d = L.parse('1/3 in', { allowBareNumber: true });
+    return L.applyDelta('a 2 in board', d.inches, 'add', 16, 'up').text;
+  })(),
+  'a 2 3/8 in board');
+
+check('applyDelta rounds down',
+  (function () {
+    var d = L.parse('1/3 in', { allowBareNumber: true });
+    return L.applyDelta('a 2 in board', d.inches, 'add', 16, 'down').text;
+  })(),
+  'a 2 5/16 in board');
+
+check('applyDelta defaults to nearest',
+  (function () {
+    var d = L.parse('1/3 in', { allowBareNumber: true });
+    return L.applyDelta('a 2 in board', d.inches, 'add', 16).text;
+  })(),
+  'a 2 5/16 in board');
+
+/* ---------------------------------------------------------------- *
  * Exact arithmetic
  * ---------------------------------------------------------------- */
 

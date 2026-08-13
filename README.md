@@ -48,7 +48,29 @@ Two rules keep it honest:
 
 Your notation is echoed back: feed it `5'-6"` and the answer is `5'-9 1/2"`, not
 `5 ft 9.5 in`. The tick marks, the spacing, the separator, and whether you used feet
-at all are all preserved. Results round to a fraction you pick, from ½" to ¹⁄₆₄".
+at all are all preserved.
+
+## Rounding
+
+Answers snap to a fraction you pick, from ½" down to ¹⁄₆₄", in one of three
+directions:
+
+| | |
+|---|---|
+| **nearest** (default) | closest graduation; halves go away from zero |
+| **up** | always toward a longer measurement — material you would rather cut twice |
+| **down** | always toward a shorter one — to stay inside an opening |
+
+A value already sitting on a graduation is never moved, in any direction. Direction
+is signed, so on a negative result *up* still means toward a longer measurement.
+
+The snapping is done in integer arithmetic rather than by dividing first. A value
+that should land exactly on a graduation would otherwise compute as `7.999999999`,
+and rounding down would drop it a whole tick.
+
+Only the answer is rounded. The two readouts show what you actually typed, rendered
+at its own denominator — enter `1/3` and it says `1/3 in`, not a distorted `5/16 in`
+— and the answer is marked `≈` when rounding moved it.
 
 ## The tape
 
@@ -56,6 +78,9 @@ Under each answer is a zoom into the single inch the result lands in, drawn on a
 canvas and subdivided at whatever precision you have selected — pick 1/64 and the
 graduations genuinely get finer. It turns an abstract dropdown into something you
 can see, and reads the way a rule does, with tick heights stepping down by halving.
+
+When rounding moves the answer, a dashed line marks where the unrounded value
+actually fell, so you can see exactly what the direction cost you.
 
 ## Running it
 
@@ -69,7 +94,7 @@ python3 -m http.server
 ## Tests
 
 ```sh
-node test/lengths.test.js                                          # 59 parser tests
+node test/lengths.test.js                                          # 78 parser tests
 NODE_PATH=/path/to/global/node_modules node test/browser.smoke.js  # page, needs playwright
 ```
 

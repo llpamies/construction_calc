@@ -462,6 +462,14 @@ code {
 }
 .rules b { color: var(--ink); font-weight: 650; }
 
+.rounding-note {
+  margin: .3rem 0 0;
+  max-width: 62ch;
+  color: var(--ink-soft);
+  font-size: .9rem;
+}
+.rounding-note b { color: var(--ink); font-weight: 650; }
+
 .foot {
   border-top: 1px solid var(--rule);
   padding-top: 1rem;

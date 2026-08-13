@@ -280,12 +280,37 @@
    * nearest 1/denom of an inch. Kept separate from formatInches because the
    * tape drawing needs the numbers, not the string.
    */
-  function decompose(inches, style, denom) {
+  /**
+   * Snap an exact value to a whole number of 1/denom inches.
+   *
+   * mode - 'nearest' (default), 'up' or 'down'. Up and down are signed: up
+   *        moves toward a longer measurement and down toward a shorter one,
+   *        which is what a person means by rounding a length up or down.
+   *
+   * Kept in integer arithmetic on purpose. Dividing first would put a value
+   * that should land exactly on a graduation at 7.999999999, and 'down'
+   * would then drop it a whole tick.
+   */
+  function snap(inches, denom, mode) {
+    var num = inches.n * denom;
+    var den = inches.d;
+    var q = Math.trunc(num / den);
+    var r = num - q * den;               // same sign as num, zero when exact
+
+    if (r === 0) return q;
+    if (mode === 'up') return num > 0 ? q + 1 : q;
+    if (mode === 'down') return num > 0 ? q : q - 1;
+    // nearest, halves away from zero
+    return Math.abs(r) * 2 >= den ? q + (num > 0 ? 1 : -1) : q;
+  }
+
+  function decompose(inches, style, denom, mode) {
     denom = denom || 16;
     style = style || { ft: null, in: null, sep: null };
 
-    var negative = inches.n < 0;
-    var ticks = Math.round((Math.abs(inches.n) * denom) / inches.d);
+    var signed = snap(inches, denom, mode);
+    var negative = signed < 0;
+    var ticks = Math.abs(signed);
     var perFoot = 12 * denom;
 
     var showFeet = style.ft !== null && ticks >= perFoot;
@@ -298,7 +323,10 @@
     return {
       negative: negative, ticks: ticks, showFeet: showFeet, feet: feet,
       whole: whole, fracNum: remainder / g, fracDen: denom / g,
-      rawFracNum: remainder, denom: denom
+      rawFracNum: remainder, denom: denom, mode: mode || 'nearest',
+      // Where the unrounded value sits within the inch on display, so the
+      // tape can show what the rounding moved.
+      exactOffset: Math.abs(toNumber(inches)) - (feet * 12 + whole)
     };
   }
 
@@ -308,9 +336,9 @@
    * style  - the `style` object of the parsed group (marks and spacing to echo)
    * denom  - fraction resolution, e.g. 16 for 1/16"
    */
-  function formatInches(inches, style, denom) {
+  function formatInches(inches, style, denom, mode) {
     style = style || { ft: null, in: null, sep: null };
-    var d = decompose(inches, style, denom);
+    var d = decompose(inches, style, denom, mode);
 
     var ftStyle = style.ft || deriveFootStyle(style.in);
     var inStyle = style.in || deriveInchStyle(style.ft);
@@ -371,7 +399,7 @@
    * Add or subtract `deltaInches` from the one measurement inside `text`,
    * leaving every other character of `text` untouched.
    */
-  function applyDelta(text, deltaInches, operation, denom) {
+  function applyDelta(text, deltaInches, operation, denom, mode) {
     var parsed = parse(text, { allowBareNumber: false });
     if (!parsed.ok) return parsed;
 
@@ -380,7 +408,7 @@
       ? sub(g.inches, deltaInches)
       : add(g.inches, deltaInches);
 
-    var replacement = formatInches(result, g.style, denom);
+    var replacement = formatInches(result, g.style, denom, mode);
 
     return {
       ok: true,

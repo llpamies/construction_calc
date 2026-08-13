@@ -10,7 +10,8 @@
   var el = {
     text: $('text'), textField: $('text-field'), textReadout: $('text-readout'),
     amount: $('amount'), amountField: $('amount-field'), amountReadout: $('amount-readout'),
-    precision: $('precision'), opAdd: $('op-add'), opSub: $('op-sub'),
+    precision: $('precision'), rounding: $('rounding'),
+    opAdd: $('op-add'), opSub: $('op-sub'),
     result: $('result'), arith: $('arith'), copy: $('copy'), examples: $('examples'),
     tape: $('tape'), canvas: $('tape-canvas'),
     tapeLabel: $('tape-label'), tapeScale: $('tape-scale')
@@ -31,7 +32,14 @@
 
   // A neutral rendering, for describing a value rather than echoing notation.
   var PLAIN = { ft: { mark: 'ft', space: ' ' }, in: { mark: 'in', space: ' ' }, sep: ' ' };
-  function plain(inches, denom) { return L.formatInches(inches, PLAIN, denom); }
+  function plain(inches, denom, mode) { return L.formatInches(inches, PLAIN, denom, mode); }
+
+  // Render a value at its own denominator so it is never distorted: a third
+  // shows as 1/3, not as the nearest sixteenth. Used for the inputs, which
+  // are reports of what was typed rather than results to be rounded.
+  function faithful(inches) { return plain(inches, inches.d); }
+
+  function exactAt(inches, denom) { return (inches.n * denom) % inches.d === 0; }
 
   function round(x, places) {
     var f = Math.pow(10, places);
@@ -123,8 +131,24 @@
       ctx.stroke();
     }
 
-    // the pointer, at the fractional position within this inch
     var t = lastTape.rawFracNum / denom;
+
+    // Where the unrounded value fell, when rounding actually moved it. Drawn
+    // before the pointer so the pointer stays on top.
+    var exact = lastTape.exactOffset;
+    if (exact >= 0 && exact <= 1 && Math.abs(exact - t) > 1e-9) {
+      var ex = Math.round(pad + span * exact) + 0.5;
+      ctx.strokeStyle = color('--ink-faint');
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(ex, base);
+      ctx.lineTo(ex, 14);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // the pointer, at the fractional position within this inch
     var px = Math.round(pad + span * t) + 0.5;
     var mark = color('--mark');
 
@@ -165,6 +189,9 @@
     var text = el.text.value;
     var amountText = el.amount.value;
     var denom = parseInt(el.precision.value, 10);
+    // The direction applies to the answer. The two readouts below stay on
+    // nearest, so they keep showing faithfully what was typed.
+    var mode = el.rounding.value;
 
     el.copy.textContent = 'Copy';
     el.copy.classList.remove('is-done');
@@ -179,7 +206,7 @@
       } else {
         amount = a.inches;
         setReadout(el.amountReadout, el.amountField,
-          '= ' + plain(amount, denom) + (a.bare ? '   (plain number read as inches)' : ''), false);
+          '= ' + faithful(amount) + (a.bare ? '   (plain number read as inches)' : ''), false);
       }
     }
 
@@ -193,7 +220,7 @@
       } else {
         source = s.inches;
         setReadout(el.textReadout, el.textField,
-          'Found “' + s.measurement.text.trim() + '” = ' + plain(source, denom), false);
+          'Found “' + s.measurement.text.trim() + '” = ' + faithful(source), false);
       }
     }
 
@@ -206,13 +233,13 @@
       return;
     }
 
-    var applied = L.applyDelta(text, amount, operation, denom);
+    var applied = L.applyDelta(text, amount, operation, denom, mode);
     if (!applied.ok) { quietResult(describe(applied, 'the text'), 'bad'); return; }
 
-    render(applied, amount, denom);
+    render(applied, amount, denom, mode);
   }
 
-  function render(applied, amount, denom) {
+  function render(applied, amount, denom, mode) {
     el.result.className = 'result';
     el.result.textContent = '';
 
@@ -229,9 +256,12 @@
     el.arith.textContent = '';
     var equation = document.createElement('span');
     equation.className = 'equation';
+    // The operands are exact; only the answer is snapped to a graduation, so
+    // only the answer is marked approximate.
     equation.textContent =
-      plain(applied.before, denom) + (operation === 'subtract' ? ' − ' : ' + ') +
-      plain(amount, denom) + ' = ' + plain(applied.after, denom);
+      faithful(applied.before) + (operation === 'subtract' ? ' − ' : ' + ') +
+      faithful(amount) + ' = ' +
+      (exactAt(applied.after, denom) ? '' : '≈ ') + plain(applied.after, denom, mode);
 
     var conversions = document.createElement('span');
     conversions.className = 'conversions';
@@ -250,12 +280,13 @@
 
     // The tape shows the inch the answer lands in — only meaningful for a
     // value at or above zero.
-    var d = L.decompose(applied.after, PLAIN, denom);
+    var d = L.decompose(applied.after, PLAIN, denom, mode);
     if (!applied.negative) {
       lastTape = d;
       el.tape.classList.add('is-on');
-      el.tapeLabel.textContent = plain(applied.after, denom);
-      el.tapeScale.textContent = 'graduated in 1/' + denom + '"';
+      el.tapeLabel.textContent = plain(applied.after, denom, mode);
+      el.tapeScale.textContent = 'graduated in 1/' + denom + '"' +
+        (mode === 'nearest' ? '' : ' · rounded ' + mode);
       drawTape();
     } else {
       lastTape = null;
@@ -324,6 +355,7 @@
   el.text.addEventListener('input', update);
   el.amount.addEventListener('input', update);
   el.precision.addEventListener('change', update);
+  el.rounding.addEventListener('change', update);
   el.opAdd.addEventListener('click', function () { setOperation('add'); });
   el.opSub.addEventListener('click', function () { setOperation('subtract'); });
   el.copy.addEventListener('click', copyResult);
