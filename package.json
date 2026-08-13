@@ -1,0 +1,14 @@
+{
+  "name": "construction_calc",
+  "version": "1.0.0",
+  "description": "Add or subtract a feet-and-inches measurement found inside free-form text, leaving the rest of the text intact.",
+  "main": "lengths.js",
+  "scripts": {
+    "test": "node test/lengths.test.js",
+    "test:browser": "node test/browser.smoke.js",
+    "start": "python3 -m http.server 8000"
+  },
+  "keywords": ["feet", "inches", "fractions", "construction", "calculator", "measurement"],
+  "license": "MIT",
+  "private": false
+}

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sixteenths — feet &amp; inches calculator</title>
+<meta name="description" content="Add or subtract a feet-and-inches measurement inside any sentence, keeping the rest of your text intact.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>📏</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="sheet">
+
+  <header class="masthead">
+    <div class="title-row">
+      <h1>Sixteenths</h1>
+      <span class="stamp">Feet · Inches · Fractions</span>
+    </div>
+    <div class="graduations" aria-hidden="true"></div>
+    <p class="lede">
+      Paste a sentence that has a measurement in it. Add or subtract a length.
+      You get your sentence back with only the measurement changed.
+    </p>
+  </header>
+
+  <section class="card">
+    <div class="field" id="text-field">
+      <label class="field-label" for="text">Text containing a measurement</label>
+      <textarea id="text" rows="3" spellcheck="false">I am 6ft, 3in and 1/2 tall</textarea>
+      <p class="readout" id="text-readout"></p>
+    </div>
+
+    <div class="operator-row">
+      <div class="ops" role="group" aria-label="Operation">
+        <button type="button" class="op" id="op-add" aria-pressed="true">
+          <span class="op-sign" aria-hidden="true">+</span> Add
+        </button>
+        <button type="button" class="op" id="op-sub" aria-pressed="false">
+          <span class="op-sign" aria-hidden="true">−</span> Subtract
+        </button>
+      </div>
+      <div class="precision">
+        <label class="field-label" for="precision">Round to</label>
+        <select id="precision">
+          <option value="2">1/2 in</option>
+          <option value="4">1/4 in</option>
+          <option value="8">1/8 in</option>
+          <option value="16" selected>1/16 in</option>
+          <option value="32">1/32 in</option>
+          <option value="64">1/64 in</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" id="amount-field">
+      <label class="field-label" for="amount">Amount</label>
+      <input id="amount" type="text" spellcheck="false" autocomplete="off" value="1/2 in">
+      <p class="readout" id="amount-readout"></p>
+    </div>
+  </section>
+
+  <section class="result-card" aria-live="polite">
+    <div class="result-head">
+      <h2>Result</h2>
+      <button type="button" class="copy" id="copy" disabled>Copy</button>
+    </div>
+    <output class="result" id="result"></output>
+    <div class="tape" id="tape">
+      <canvas class="tape-canvas" id="tape-canvas"></canvas>
+      <div class="tape-caption">
+        <span id="tape-label"></span>
+        <span id="tape-scale"></span>
+      </div>
+    </div>
+    <p class="arith" id="arith"></p>
+  </section>
+
+  <section class="block">
+    <h2>Try one</h2>
+    <div class="chips" id="examples"></div>
+  </section>
+
+  <section class="block">
+    <h2>What it reads</h2>
+    <table class="ref">
+      <tbody>
+        <tr>
+          <th scope="row">Notation</th>
+          <td><code>6ft 3in</code> · <code>6' 3"</code> · <code>5'-6"</code> ·
+              <code>6 feet 3 inches</code> · <code>6 ft. 3 in.</code> · <code>5' 6''</code></td>
+        </tr>
+        <tr>
+          <th scope="row">No spaces</th>
+          <td><code>6ft3in</code> · <code>12ft6in</code> · <code>5'6"</code>. A number
+              glued to a feet mark is inches, so <code>5'6</code> and <code>6ft2</code>
+              work too</td>
+        </tr>
+        <tr>
+          <th scope="row">Numbers</th>
+          <td>whole, decimal (<code>6.5 ft</code>), fraction (<code>1/2 in</code>),
+              mixed (<code>3 1/2 in</code>)</td>
+        </tr>
+        <tr>
+          <th scope="row">Scattered</th>
+          <td><code>6ft, 3in and 1/2</code> is one measurement — six foot three and a half</td>
+        </tr>
+        <tr>
+          <th scope="row">In prose</th>
+          <td><code>Order 3 of the 6 ft 2 in posts</code> reads as 6 ft 2 in.
+              The <code>3</code> is left alone</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block">
+    <h2>Two rules</h2>
+    <ul class="rules">
+      <li><b>One measurement per box.</b> If a box holds two, it names both and refuses
+          to guess. <code>an 8 ft wall and a 3 ft door</code> is an error, not a coin flip.</li>
+      <li><b>A bare number counts only in Amount</b>, where it means inches — so
+          <code>2 1/2</code> is two and a half inches. In the text box a number needs a
+          unit, which is why ordinary numbers in your writing are never swallowed.</li>
+    </ul>
+  </section>
+
+  <footer class="foot">
+    <span>Runs entirely in your browser</span>
+    <span>Exact fractions — no floating point drift</span>
+  </footer>
+
+</main>
+
+<script src="lengths.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
