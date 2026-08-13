@@ -1,4 +1,4 @@
-# Sixteenths — a feet &amp; inches calculator
+# Construction Calc
 
 Paste any text that contains a feet-and-inches measurement, give it a length to add
 or subtract, and get your text back with only the measurement changed.
