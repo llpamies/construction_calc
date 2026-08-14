@@ -82,6 +82,24 @@ can see, and reads the way a rule does, with tick heights stepping down by halvi
 When rounding moves the answer, a dashed line marks where the unrounded value
 actually fell, so you can see exactly what the direction cost you.
 
+## Where you left off
+
+You rarely measure a wall once. The whole worksheet — the sentence, the amount,
+add or subtract, and both rounding settings — is saved to `localStorage` under
+`construction-calc.v1` on every change and restored on the next visit. An empty
+box counts as state and stays empty; it does not spring back to the default
+sentence.
+
+Nothing is sent anywhere — the key lives in your browser, on your machine.
+
+Storage is not always reachable. A private window, or an embedding that hands
+the page an opaque origin (a `sandbox`ed iframe without `allow-same-origin`,
+where `localStorage` throws `SecurityError` on access), leaves the page working
+exactly as before and simply not remembering. Every read and write is guarded,
+and a stored entry that is unparseable or names a precision, rounding mode or
+direction the controls do not offer is ignored field by field rather than
+taken on faith.
+
 ## Running it
 
 It is four static files and no dependencies — no build step, no bundler, no

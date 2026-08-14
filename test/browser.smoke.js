@@ -6,6 +6,8 @@ var { chromium } = require('playwright');
 
 var FILE = 'file://' + path.resolve(__dirname, '..', 'index.html');
 var DIR = path.resolve(__dirname, '..');
+var DEFAULT_TEXT = 'The stud wall runs 10 ft 7 in';
+var STORE_KEY = 'construction-calc.v1';
 
 (async function () {
   var browser = await chromium.launch();
@@ -112,8 +114,9 @@ var DIR = path.resolve(__dirname, '..');
       check('bare number in prose is not a measurement', engine.bareInProse, 'none');
 
       // --- UI behavior ---
+      check('default text', await page.inputValue('#text'), DEFAULT_TEXT);
       check('default result', await page.locator('#result').textContent(),
-            'I am 6ft, 4in tall');
+            'The stud wall runs 10 ft 7 1/2 in');
       check('tape visible', await page.locator('#tape').isVisible(), true);
       check('tape scale label', await page.locator('#tape-scale').textContent(),
             'graduated in 1/16"');
@@ -177,6 +180,55 @@ var DIR = path.resolve(__dirname, '..');
       check('tape hidden on error', await page.locator('#tape').isVisible(), false);
       check('copy disabled on error', await page.locator('#copy').isDisabled(), true);
       await page.locator('.chip').nth(0).click();
+
+      // --- the worksheet survives a reload ---
+      await page.fill('#text', 'Header sits 7 ft 3 in above the slab');
+      await page.fill('#amount', '2 1/4 in');
+      await page.click('#op-sub');
+      await page.selectOption('#precision', '8');
+      await page.selectOption('#rounding', 'up');
+      var before = await page.locator('#result').textContent();
+      await page.reload();
+      check('text remembered', await page.inputValue('#text'),
+            'Header sits 7 ft 3 in above the slab');
+      check('amount remembered', await page.inputValue('#amount'), '2 1/4 in');
+      check('direction remembered',
+            await page.locator('#op-sub').getAttribute('aria-pressed'), 'true');
+      check('precision remembered', await page.inputValue('#precision'), '8');
+      check('rounding remembered', await page.inputValue('#rounding'), 'up');
+      check('result recomputed from the remembered worksheet',
+            await page.locator('#result').textContent(), before);
+
+      // An emptied box is a state worth keeping too — it must not spring back
+      // to the default sentence on the next visit.
+      await page.fill('#text', '');
+      await page.reload();
+      check('emptied text stays empty', await page.inputValue('#text'), '');
+
+      // Junk in storage must not take the page down with it.
+      await page.evaluate(function (k) {
+        localStorage.setItem(k, '{ not json');
+      }, STORE_KEY);
+      await page.reload();
+      check('survives unparseable storage', await page.inputValue('#text'), DEFAULT_TEXT);
+
+      await page.evaluate(function (k) {
+        localStorage.setItem(k, JSON.stringify({
+          text: 'a 2 ft board', amount: '1 in',
+          precision: '999', rounding: 'sideways', operation: 'multiply'
+        }));
+      }, STORE_KEY);
+      await page.reload();
+      check('ignores an out-of-range precision', await page.inputValue('#precision'), '16');
+      check('ignores an unknown rounding', await page.inputValue('#rounding'), 'nearest');
+      check('ignores an unknown operation',
+            await page.locator('#op-add').getAttribute('aria-pressed'), 'true');
+      check('still restores the valid fields', await page.inputValue('#text'), 'a 2 ft board');
+
+      // Leave a pristine page behind for the screenshot.
+      await page.evaluate(function (k) { localStorage.removeItem(k); }, STORE_KEY);
+      await page.reload();
+      check('clean slate returns the default', await page.inputValue('#text'), DEFAULT_TEXT);
     }
 
     // --- theme integrity: body must paint its own ground, text must contrast ---

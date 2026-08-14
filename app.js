@@ -21,13 +21,15 @@
   var copyable = '';
   var lastTape = null;
 
+  var DEFAULT_TEXT = 'The stud wall runs 10 ft 7 in';
+
   var EXAMPLES = [
-    { text: 'I am 6ft, 3in and 1/2 tall',      amount: '1/2 in',   op: 'add' },
+    { text: DEFAULT_TEXT,                       amount: '1/2 in',   op: 'add' },
     { text: 'The beam is 5\'-6" long',          amount: '3 1/2 in', op: 'add' },
     { text: 'Cut the 8 ft 0 in stud to fit',    amount: '3 1/4 in', op: 'subtract' },
     { text: 'Order 3 of the 6 ft 2 in posts',   amount: '1 ft',     op: 'add' },
     { text: 'Door rough opening 6 feet 8 inches', amount: '1 1/2',  op: 'subtract' },
-    { text: 'I am 6ft3in and 1/2 tall',         amount: '1/2 in',   op: 'add' }
+    { text: 'Ceiling height 9ft1in and 1/2',    amount: '1/2 in',   op: 'add' }
   ];
 
   // A neutral rendering, for describing a value rather than echoing notation.
@@ -183,6 +185,61 @@
     return a || 1;
   }
 
+  /* ---------------- the worksheet, remembered ----------------
+     You rarely measure a wall once. The whole worksheet — sentence, amount,
+     direction and both rounding settings — is kept so the page opens where
+     you left it. Storage can be missing or refuse to answer (a private
+     window, or an embedding that hands the page an opaque origin), so every
+     access is guarded; if it fails the page simply opens on its defaults. */
+
+  var STORE_KEY = 'construction-calc.v1';
+
+  var store = (function () {
+    try {
+      var s = window.localStorage;
+      var probe = STORE_KEY + '.probe';
+      s.setItem(probe, '1');
+      s.removeItem(probe);
+      return s;
+    } catch (e) { return null; }
+  })();
+
+  function save() {
+    if (!store) return;
+    try {
+      store.setItem(STORE_KEY, JSON.stringify({
+        text: el.text.value,
+        amount: el.amount.value,
+        operation: operation,
+        precision: el.precision.value,
+        rounding: el.rounding.value
+      }));
+    } catch (e) { /* full or revoked mid-session; not worth interrupting for */ }
+  }
+
+  // Only adopt a stored choice the control actually offers, so an old or
+  // hand-edited entry cannot leave a select showing nothing.
+  function restoreSelect(node, value) {
+    for (var i = 0; i < node.options.length; i++) {
+      if (node.options[i].value === value) { node.value = value; return; }
+    }
+  }
+
+  function restore() {
+    if (!store) return;
+    var saved;
+    try { saved = JSON.parse(store.getItem(STORE_KEY)); } catch (e) { return; }
+    if (!saved || typeof saved !== 'object') return;
+
+    if (typeof saved.text === 'string') el.text.value = saved.text;
+    if (typeof saved.amount === 'string') el.amount.value = saved.amount;
+    restoreSelect(el.precision, saved.precision);
+    restoreSelect(el.rounding, saved.rounding);
+    if (saved.operation === 'add' || saved.operation === 'subtract') {
+      applyOperation(saved.operation);
+    }
+  }
+
   /* ---------------- main ---------------- */
 
   function update() {
@@ -192,6 +249,8 @@
     // The direction applies to the answer. The two readouts below stay on
     // nearest, so they keep showing faithfully what was typed.
     var mode = el.rounding.value;
+
+    save();
 
     el.copy.textContent = 'Copy';
     el.copy.classList.remove('is-done');
@@ -299,11 +358,15 @@
 
   /* ---------------- events ---------------- */
 
-  function setOperation(next) {
+  function applyOperation(next) {
     operation = next;
     var isAdd = next === 'add';
     el.opAdd.setAttribute('aria-pressed', String(isAdd));
     el.opSub.setAttribute('aria-pressed', String(!isAdd));
+  }
+
+  function setOperation(next) {
+    applyOperation(next);
     update();
   }
 
@@ -374,5 +437,6 @@
     attributes: true, attributeFilter: ['data-theme']
   });
 
+  restore();
   update();
 })();
