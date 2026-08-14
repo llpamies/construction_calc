@@ -106,6 +106,19 @@ Either way the notation of the source is echoed, so `87.5"` grows into `7'4"`
 while `6 feet 3 inches` collapses to `75 1/2 inches`. Feet appear only once
 there are twelve inches to show them.
 
+## Theme
+
+Both palettes were always in the stylesheet; what was missing was any way to
+disagree with the operating system. The icon beside the masthead stamp cycles
+**system → light → dark** and starts on system, which means no `data-theme`
+attribute on the root at all — the media query decides, and the page follows if
+the OS flips mid-session. The other two states stamp `data-theme` and win over
+it in both directions. The choice is remembered with the rest of the worksheet.
+
+The tape is painted from colors read out of the CSS, so it is repainted on
+every switch — by the button, by the OS, or by a host stamping the attribute
+itself.
+
 ## Where you left off
 
 You rarely measure a wall once. The whole worksheet — the sentence, the amount,
@@ -123,6 +136,16 @@ exactly as before and simply not remembering. Every read and write is guarded,
 and a stored entry that is unparseable or names a precision, rounding mode or
 direction the controls do not offer is ignored field by field rather than
 taken on faith.
+
+## Buy me a coffee
+
+The footer carries a Buy Me a Coffee button for `llpamies`. It is a plain
+styled link with the `data-slug` attribute, not the official widget: that
+widget is a script from `cdnjs.buymeacoffee.com`, and the single-file build of
+this page runs under a strict CSP that blocks every external host, so the
+widget would render nothing there. A link works in both places, keeps the page
+dependency-free, and loads no third-party code. Swapping in the real widget is
+a one-line change if the hosted site is the only target that matters.
 
 ## Running it
 

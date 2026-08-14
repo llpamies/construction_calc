@@ -270,6 +270,17 @@ var STORE_KEY = 'construction-calc.v1';
       await page.evaluate(function (k) { localStorage.removeItem(k); }, STORE_KEY);
       await page.reload();
       check('clean slate returns the default', await page.inputValue('#text'), DEFAULT_TEXT);
+
+      // --- the coffee button ---
+      var bmc = page.locator('.bmc');
+      check('coffee button carries the slug', await bmc.getAttribute('data-slug'), 'llpamies');
+      check('coffee button points at the right page', await bmc.getAttribute('href'),
+            'https://www.buymeacoffee.com/llpamies');
+      check('coffee button opens safely', await bmc.getAttribute('rel'), 'noopener noreferrer');
+      check('coffee button is self-contained (no third-party script)',
+            await page.evaluate(function () {
+              return document.querySelectorAll('script[src^="http"]').length;
+            }), 0);
     }
 
     // --- theme integrity: body must paint its own ground, text must contrast ---
@@ -289,6 +300,42 @@ var STORE_KEY = 'construction-calc.v1';
     check(theme + ': text contrasts with ground', contrast > 0.4, true);
     check(theme + ': ground matches theme',
           theme === 'dark' ? lum(colors.bg) < 0.3 : lum(colors.bg) > 0.7, true);
+
+    // --- the theme control: it has to be able to disagree with the OS ---
+    var attr = function () {
+      return page.evaluate(function () {
+        return document.documentElement.getAttribute('data-theme');
+      });
+    };
+    var bodyLum = async function () {
+      return lum(await page.evaluate(function () {
+        return getComputedStyle(document.body).backgroundColor;
+      }));
+    };
+
+    check(theme + ': defaults to the system setting', await attr(), null);
+    check(theme + ': shows the system icon',
+          await page.locator('.theme-icon[data-theme-icon="system"]').isVisible(), true);
+
+    await page.click('#theme');
+    check(theme + ': one click forces light', await attr(), 'light');
+    check(theme + ': forced light really is light', await bodyLum() > 0.7, true);
+
+    await page.click('#theme');
+    check(theme + ': two clicks force dark', await attr(), 'dark');
+    check(theme + ': forced dark really is dark', await bodyLum() < 0.3, true);
+
+    await page.click('#theme');
+    check(theme + ': three clicks return to the system setting', await attr(), null);
+
+    await page.click('#theme');
+    await page.reload();
+    check(theme + ': the choice survives a reload', await attr(), 'light');
+
+    // back to the system default, so the screenshots show the real thing
+    await page.click('#theme');
+    await page.click('#theme');
+    check(theme + ': restored to system', await attr(), null);
 
     await page.screenshot({ path: path.join(DIR, theme === 'light' ? 'screenshot.png' : 'screenshot-dark.png'), fullPage: true });
     await page.close();

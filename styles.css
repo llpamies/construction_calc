@@ -111,6 +111,32 @@ h1 {
   text-wrap: balance;
 }
 
+.title-aside {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+
+/* Small, quiet, and out of the way: the theme is a preference, not a tool. */
+.theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.theme:hover { color: var(--ink); border-color: var(--rule); }
+
+.theme-icon { width: 16px; height: 16px; display: block; }
+.theme-icon[hidden] { display: none; }
+
 .stamp {
   font-family: var(--mono);
   font-size: .68rem;
@@ -505,6 +531,36 @@ code {
   font-size: .9rem;
 }
 .rounding-note b { color: var(--ink); font-weight: 650; }
+
+/* Buy Me a Coffee. Their yellow is the whole point of the button, so it is
+   fixed rather than themed — it has to stay recognisable in both palettes,
+   and #000 on #FFDD00 carries its own contrast wherever it lands. */
+.support { display: flex; justify-content: center; }
+
+.bmc {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1.15rem;
+  border: 1px solid #e5c700;
+  border-radius: 6px;
+  background: #ffdd00;
+  color: #101010;
+  font-family: var(--sans);
+  font-size: .9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.bmc:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .22);
+}
+
+.bmc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.bmc-cup { width: 19px; height: 19px; display: block; }
 
 .foot {
   border-top: 1px solid var(--rule);

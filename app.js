@@ -11,7 +11,7 @@
     text: $('text'), textField: $('text-field'), textReadout: $('text-readout'),
     amount: $('amount'), amountField: $('amount-field'), amountReadout: $('amount-readout'),
     precision: $('precision'), rounding: $('rounding'),
-    opAdd: $('op-add'), opSub: $('op-sub'), feet: $('feet'),
+    opAdd: $('op-add'), opSub: $('op-sub'), feet: $('feet'), theme: $('theme'),
     result: $('result'), arith: $('arith'), copy: $('copy'), examples: $('examples'),
     tape: $('tape'), canvas: $('tape-canvas'),
     tapeLabel: $('tape-label'), tapeScale: $('tape-scale')
@@ -27,6 +27,37 @@
   // it. Turn it back off and it stays off while you keep editing.
   var aggregate = false;
   var sawFeet = false;
+
+  /* ---------------- colour theme ----------------
+     Both palettes have always been there; what was missing was any way to
+     disagree with the operating system. "system" is the default and means
+     exactly that — no attribute on the root, so the media query decides and
+     the page follows along if the OS flips mid-session. */
+
+  var THEMES = ['system', 'light', 'dark'];
+  var THEME_LABEL = {
+    system: 'following your system',
+    light: 'light',
+    dark: 'dark'
+  };
+  var theme = 'system';
+
+  function applyTheme(next) {
+    theme = next;
+    var root = document.documentElement;
+    if (next === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', next);
+
+    var icons = el.theme.querySelectorAll('.theme-icon');
+    for (var i = 0; i < icons.length; i++) {
+      icons[i].hidden = icons[i].getAttribute('data-theme-icon') !== next;
+    }
+
+    var label = 'Colour theme: ' + THEME_LABEL[next] +
+                '. Switch to ' + THEME_LABEL[THEMES[(THEMES.indexOf(next) + 1) % 3]] + '.';
+    el.theme.setAttribute('aria-label', label);
+    el.theme.setAttribute('title', label);
+  }
 
   var DEFAULT_TEXT = 'The rough opening is 7ft 3in.';
 
@@ -227,6 +258,7 @@
         precision: el.precision.value,
         rounding: el.rounding.value,
         aggregate: aggregate,
+        theme: theme,
         // Stored alongside the choice: without it a reload would look like a
         // fresh crossing into feet and quietly undo a deliberate "off".
         sawFeet: sawFeet
@@ -256,6 +288,7 @@
       applyOperation(saved.operation);
     }
     if (typeof saved.aggregate === 'boolean') applyAggregate(saved.aggregate);
+    if (THEMES.indexOf(saved.theme) !== -1) applyTheme(saved.theme);
     if (typeof saved.sawFeet === 'boolean') sawFeet = saved.sawFeet;
   }
 
@@ -458,6 +491,11 @@
     applyAggregate(!aggregate);
     update();
   });
+  el.theme.addEventListener('click', function () {
+    applyTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]);
+    save();
+    drawTape();
+  });
   el.copy.addEventListener('click', copyResult);
 
   window.addEventListener('resize', drawTape);
@@ -474,6 +512,7 @@
     attributes: true, attributeFilter: ['data-theme']
   });
 
+  applyTheme(theme);
   restore();
   update();
 })();
