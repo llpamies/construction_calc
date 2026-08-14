@@ -6,7 +6,7 @@ var { chromium } = require('playwright');
 
 var FILE = 'file://' + path.resolve(__dirname, '..', 'index.html');
 var DIR = path.resolve(__dirname, '..');
-var DEFAULT_TEXT = 'The stud wall runs 10 ft 7 in';
+var DEFAULT_TEXT = 'The rough opening is 7ft 3in.';
 var STORE_KEY = 'construction-calc.v1';
 
 (async function () {
@@ -116,7 +116,7 @@ var STORE_KEY = 'construction-calc.v1';
       // --- UI behavior ---
       check('default text', await page.inputValue('#text'), DEFAULT_TEXT);
       check('default result', await page.locator('#result').textContent(),
-            'The stud wall runs 10 ft 7 1/2 in');
+            'The rough opening is 7ft 3 1/2in.');
       check('tape visible', await page.locator('#tape').isVisible(), true);
       check('tape scale label', await page.locator('#tape-scale').textContent(),
             'graduated in 1/16"');

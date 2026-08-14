@@ -21,7 +21,7 @@
   var copyable = '';
   var lastTape = null;
 
-  var DEFAULT_TEXT = 'The stud wall runs 10 ft 7 in';
+  var DEFAULT_TEXT = 'The rough opening is 7ft 3in.';
 
   var EXAMPLES = [
     { text: DEFAULT_TEXT,                       amount: '1/2 in',   op: 'add' },
