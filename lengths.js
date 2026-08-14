@@ -269,7 +269,12 @@
     if (!inStyle) return { mark: 'ft', space: ' ' };
     var mark = IN_TO_FT_MARK[inStyle.mark];
     if (mark) return { mark: mark, space: inStyle.space };
-    return { mark: matchCase(inStyle.mark, 'ft'), space: inStyle.space || ' ' };
+    // Glued inches stay glued in the feet they gain: "69.12in" grown into feet
+    // reads "5ft 9 5/8in", not "5 ft 9 5/8in".
+    return {
+      mark: matchCase(inStyle.mark, 'ft'),
+      space: inStyle.space === '' ? '' : (inStyle.space || ' ')
+    };
   }
 
   function renderPart(whole, fracNum, fracDen, style) {
@@ -310,7 +315,15 @@
     return Math.abs(r) * 2 >= den ? q + (num > 0 ? 1 : -1) : q;
   }
 
-  function decompose(inches, style, denom, mode) {
+  // Whether the rendering should carry feet at all. By default the source
+  // decides — inches-only text stays inches-only — but a caller can force it
+  // either way, which is how the interface offers the choice.
+  function wantsFeet(style, feet) {
+    if (feet === true || feet === false) return feet;
+    return style.ft !== null;
+  }
+
+  function decompose(inches, style, denom, mode, feet) {
     denom = denom || 16;
     style = style || { ft: null, in: null, sep: null };
 
@@ -319,7 +332,7 @@
     var ticks = Math.abs(signed);
     var perFoot = 12 * denom;
 
-    var showFeet = style.ft !== null && ticks >= perFoot;
+    var showFeet = wantsFeet(style, feet) && ticks >= perFoot;
     var feet = showFeet ? Math.floor(ticks / perFoot) : 0;
     var inchTicks = ticks - feet * perFoot;
     var whole = Math.floor(inchTicks / denom);
@@ -341,10 +354,12 @@
    *
    * style  - the `style` object of the parsed group (marks and spacing to echo)
    * denom  - fraction resolution, e.g. 16 for 1/16"
+   * feet   - true to carry feet even when the source had none, false to keep
+   *          the answer in inches even when it did; omit to follow the source
    */
-  function formatInches(inches, style, denom, mode) {
+  function formatInches(inches, style, denom, mode, feet) {
     style = style || { ft: null, in: null, sep: null };
-    var d = decompose(inches, style, denom, mode);
+    var d = decompose(inches, style, denom, mode, feet);
 
     var ftStyle = style.ft || deriveFootStyle(style.in);
     var inStyle = style.in || deriveInchStyle(style.ft);
@@ -415,7 +430,7 @@
    * Add or subtract `deltaInches` from the one measurement inside `text`,
    * leaving every other character of `text` untouched.
    */
-  function applyDelta(text, deltaInches, operation, denom, mode) {
+  function applyDelta(text, deltaInches, operation, denom, mode, feet) {
     var parsed = parse(text, { allowBareNumber: false });
     if (!parsed.ok) return parsed;
 
@@ -424,7 +439,7 @@
       ? sub(g.inches, deltaInches)
       : add(g.inches, deltaInches);
 
-    var replacement = formatInches(result, g.style, denom, mode);
+    var replacement = formatInches(result, g.style, denom, mode, feet);
 
     return {
       ok: true,

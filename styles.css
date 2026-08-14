@@ -12,6 +12,11 @@
   --ink-faint: #8d979f;
   --rule:      #d0d7dc;
   --rule-soft: #e1e6ea;
+  /* The tape's own markings. A rule's graduations are cut lines, not
+     hairline borders, so they get their own darker tokens rather than
+     borrowing --rule and washing out against the card. */
+  --tick:      #46525b;
+  --tick-fine: #78848d;
   --accent:    #1f5fa9;
   --accent-wash: #e4ecf7;
   --mark:      #0d7a5c;
@@ -33,6 +38,8 @@
     --ink-faint: #626d76;
     --rule:      #28313a;
     --rule-soft: #1e262d;
+    --tick:      #a3aeb7;
+    --tick-fine: #6f7b84;
     --accent:    #6ea8ee;
     --accent-wash: #17263a;
     --mark:      #46c398;
@@ -51,6 +58,8 @@
   --ink-faint: #626d76;
   --rule:      #28313a;
   --rule-soft: #1e262d;
+  --tick:      #a3aeb7;
+  --tick-fine: #6f7b84;
   --accent:    #6ea8ee;
   --accent-wash: #17263a;
   --mark:      #46c398;
@@ -250,6 +259,33 @@ button:focus-visible {
 }
 
 .op-sign { font-size: 1.05rem; line-height: 1; }
+
+/* Same button vocabulary as the operator pair, but standing alone: it is a
+   state, not a choice between two. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem .95rem;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--sunk);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.toggle:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+.toggle[aria-pressed="true"] {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .precision { display: flex; align-items: center; gap: .55rem; }
 
@@ -485,6 +521,9 @@ code {
 
 @media (max-width: 460px) {
   .operator-row { align-items: stretch; flex-direction: column; }
+  /* The stacked row stretches its groups, but a lone button stretched to the
+     full width would read as a banner rather than as the switch it is. */
+  .toggle { align-self: flex-start; }
   .ref th { width: auto; display: block; padding-bottom: .1rem; border-bottom: 0; }
   .ref td { display: block; padding-top: 0; }
 }

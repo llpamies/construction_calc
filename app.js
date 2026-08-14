@@ -11,7 +11,7 @@
     text: $('text'), textField: $('text-field'), textReadout: $('text-readout'),
     amount: $('amount'), amountField: $('amount-field'), amountReadout: $('amount-readout'),
     precision: $('precision'), rounding: $('rounding'),
-    opAdd: $('op-add'), opSub: $('op-sub'),
+    opAdd: $('op-add'), opSub: $('op-sub'), feet: $('feet'),
     result: $('result'), arith: $('arith'), copy: $('copy'), examples: $('examples'),
     tape: $('tape'), canvas: $('tape-canvas'),
     tapeLabel: $('tape-label'), tapeScale: $('tape-scale')
@@ -20,6 +20,13 @@
   var operation = 'add';
   var copyable = '';
   var lastTape = null;
+
+  // Whether answers carry feet. Off by default, so 69.12in stays inches; text
+  // that itself uses feet switches it on, and `sawFeet` remembers what the
+  // last readable text looked like so that only the crossing into feet flips
+  // it. Turn it back off and it stays off while you keep editing.
+  var aggregate = false;
+  var sawFeet = false;
 
   var DEFAULT_TEXT = 'The rough opening is 7ft 3in.';
 
@@ -34,7 +41,9 @@
 
   // A neutral rendering, for describing a value rather than echoing notation.
   var PLAIN = { ft: { mark: 'ft', space: ' ' }, in: { mark: 'in', space: ' ' }, sep: ' ' };
-  function plain(inches, denom, mode) { return L.formatInches(inches, PLAIN, denom, mode); }
+  function plain(inches, denom, mode) {
+    return L.formatInches(inches, PLAIN, denom, mode, aggregate);
+  }
 
   // Render a value at its own denominator so it is never distorted: a third
   // shows as 1/3, not as the nearest sixteenth. Used for the inputs, which
@@ -105,7 +114,7 @@
     var denom = lastTape.denom;
 
     // baseline
-    ctx.strokeStyle = color('--rule');
+    ctx.strokeStyle = color('--tick-fine');
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(pad, base + 0.5);
@@ -126,7 +135,11 @@
       else if (reduced === 32) { h = tallest * 0.26; }
       else { h = tallest * 0.2; }
 
-      ctx.strokeStyle = (i === 0 || i === denom) ? color('--ink-faint') : color('--rule');
+      // Weight follows the same hierarchy as the heights: the inch marks and
+      // the coarse subdivisions read first, the fine ones sit back a step —
+      // but every one of them stays legible against the card.
+      ctx.strokeStyle = (i === 0 || i === denom || reduced <= 4)
+        ? color('--tick') : color('--tick-fine');
       ctx.beginPath();
       ctx.moveTo(x, base);
       ctx.lineTo(x, base - h);
@@ -140,7 +153,7 @@
     var exact = lastTape.exactOffset;
     if (exact >= 0 && exact <= 1 && Math.abs(exact - t) > 1e-9) {
       var ex = Math.round(pad + span * exact) + 0.5;
-      ctx.strokeStyle = color('--ink-faint');
+      ctx.strokeStyle = color('--tick');
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 3]);
       ctx.beginPath();
@@ -170,7 +183,7 @@
     ctx.fill();
 
     // end labels
-    ctx.fillStyle = color('--ink-faint');
+    ctx.fillStyle = color('--ink-soft');
     ctx.font = '11px ' + css.getPropertyValue('--mono');
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
@@ -212,7 +225,11 @@
         amount: el.amount.value,
         operation: operation,
         precision: el.precision.value,
-        rounding: el.rounding.value
+        rounding: el.rounding.value,
+        aggregate: aggregate,
+        // Stored alongside the choice: without it a reload would look like a
+        // fresh crossing into feet and quietly undo a deliberate "off".
+        sawFeet: sawFeet
       }));
     } catch (e) { /* full or revoked mid-session; not worth interrupting for */ }
   }
@@ -238,6 +255,8 @@
     if (saved.operation === 'add' || saved.operation === 'subtract') {
       applyOperation(saved.operation);
     }
+    if (typeof saved.aggregate === 'boolean') applyAggregate(saved.aggregate);
+    if (typeof saved.sawFeet === 'boolean') sawFeet = saved.sawFeet;
   }
 
   /* ---------------- main ---------------- */
@@ -249,8 +268,6 @@
     // The direction applies to the answer. The two readouts below stay on
     // nearest, so they keep showing faithfully what was typed.
     var mode = el.rounding.value;
-
-    save();
 
     el.copy.textContent = 'Copy';
     el.copy.classList.remove('is-done');
@@ -278,10 +295,21 @@
         setReadout(el.textReadout, el.textField, describe(s, 'the text'), true);
       } else {
         source = s.inches;
+
+        // Crossing into feet-bearing text switches aggregation on, once. An
+        // unreadable draft in between is not a crossing — `sawFeet` is left
+        // alone — so a typo mid-edit cannot re-arm this and undo a
+        // deliberate "off".
+        var hasFeet = s.measurement.style.ft !== null;
+        if (hasFeet && !sawFeet) applyAggregate(true);
+        sawFeet = hasFeet;
+
         setReadout(el.textReadout, el.textField,
           'Found “' + s.measurement.text.trim() + '” = ' + faithful(source), false);
       }
     }
+
+    save();
 
     if (text.trim() === '' || amountText.trim() === '') {
       quietResult('Fill in both boxes to see the result.', 'quiet');
@@ -292,7 +320,7 @@
       return;
     }
 
-    var applied = L.applyDelta(text, amount, operation, denom, mode);
+    var applied = L.applyDelta(text, amount, operation, denom, mode, aggregate);
     if (!applied.ok) { quietResult(describe(applied, 'the text'), 'bad'); return; }
 
     render(applied, amount, denom, mode);
@@ -339,7 +367,7 @@
 
     // The tape shows the inch the answer lands in — only meaningful for a
     // value at or above zero.
-    var d = L.decompose(applied.after, PLAIN, denom, mode);
+    var d = L.decompose(applied.after, PLAIN, denom, mode, aggregate);
     if (!applied.negative) {
       lastTape = d;
       el.tape.classList.add('is-on');
@@ -357,6 +385,11 @@
   }
 
   /* ---------------- events ---------------- */
+
+  function applyAggregate(next) {
+    aggregate = next;
+    el.feet.setAttribute('aria-pressed', String(next));
+  }
 
   function applyOperation(next) {
     operation = next;
@@ -421,6 +454,10 @@
   el.rounding.addEventListener('change', update);
   el.opAdd.addEventListener('click', function () { setOperation('add'); });
   el.opSub.addEventListener('click', function () { setOperation('subtract'); });
+  el.feet.addEventListener('click', function () {
+    applyAggregate(!aggregate);
+    update();
+  });
   el.copy.addEventListener('click', copyResult);
 
   window.addEventListener('resize', drawTape);

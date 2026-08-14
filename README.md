@@ -82,6 +82,30 @@ can see, and reads the way a rule does, with tick heights stepping down by halvi
 When rounding moves the answer, a dashed line marks where the unrounded value
 actually fell, so you can see exactly what the direction cost you.
 
+The graduations are drawn from their own `--tick` / `--tick-fine` tokens rather
+than the `--rule` border color they used to borrow — a rule's markings are cut
+lines, not hairlines, and at 1.4:1 against the card the fine ones were barely
+there. They now sit at 3.7:1, with the inch marks and coarse subdivisions at
+7.7:1, so the hierarchy is carried by tick height rather than by fading out.
+
+## Feet
+
+A **Feet** switch sits with the operator controls and decides whether answers
+carry feet at all. It starts off, so `69.1203498in` plus a half stays
+`69 5/8in` rather than jumping to feet; switch it on and the same answer reads
+`5ft 9 5/8in`. Turn it off against feet-bearing text and the answer collapses
+the other way, into `87 1/2in`.
+
+Text that already uses feet switches it on for you — but only on the crossing
+into feet, so turning it back off holds while you keep editing. An unreadable
+draft in between is not a crossing either: a typo cannot re-arm the switch and
+undo a deliberate choice. The setting is remembered along with the rest of the
+worksheet.
+
+Either way the notation of the source is echoed, so `87.5"` grows into `7'4"`
+while `6 feet 3 inches` collapses to `75 1/2 inches`. Feet appear only once
+there are twelve inches to show them.
+
 ## Where you left off
 
 You rarely measure a wall once. The whole worksheet — the sentence, the amount,

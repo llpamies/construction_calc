@@ -181,14 +181,55 @@ var STORE_KEY = 'construction-calc.v1';
       check('copy disabled on error', await page.locator('#copy').isDisabled(), true);
       await page.locator('.chip').nth(0).click();
 
+      // --- aggregating into feet ---
+      var feetState = function () {
+        return page.locator('#feet').getAttribute('aria-pressed');
+      };
+
+      check('the default sentence arms the toggle', await feetState(), 'true');
+
+      await page.fill('#text', '69.1203498in');
+      check('an inches-only answer gains feet', await page.locator('#result').textContent(),
+            '5ft 9 5/8in');
+      await page.click('#feet');
+      check('toggling off keeps the answer in inches',
+            await page.locator('#result').textContent(), '69 5/8in');
+      check('the toggle reports its state', await feetState(), 'false');
+      check('the readout follows the same convention',
+            /\bft\b/.test(await page.locator('#text-readout').textContent()), false);
+
+      // Text that uses feet arms the toggle on the way in...
+      await page.fill('#text', 'The rough opening is 7ft 3in.');
+      check('feet in the text arm the toggle', await feetState(), 'true');
+
+      // ...and turning it back off holds while the editing continues.
+      await page.click('#feet');
+      check('a deliberate off collapses feet into inches',
+            await page.locator('#result').textContent(), 'The rough opening is 87 1/2in.');
+      await page.fill('#text', 'The rough opening is 7ft 4in.');
+      check('editing feet text does not re-arm it', await feetState(), 'false');
+      await page.fill('#text', 'a 7ft door and a 3ft window');
+      await page.fill('#text', 'The rough opening is 7ft 5in.');
+      check('an unreadable draft in between does not re-arm it', await feetState(), 'false');
+
+      // Feet only appear once there are twelve inches to show.
+      await page.fill('#text', 'a 10in offcut');
+      await page.click('#feet');
+      check('under a foot stays in inches with feet on',
+            await page.locator('#result').textContent(), 'a 10 1/2in offcut');
+      await page.locator('.chip').nth(0).click();
+
       // --- the worksheet survives a reload ---
       await page.fill('#text', 'Header sits 7 ft 3 in above the slab');
       await page.fill('#amount', '2 1/4 in');
       await page.click('#op-sub');
       await page.selectOption('#precision', '8');
       await page.selectOption('#rounding', 'up');
+      await page.click('#feet');
+      var beforeFeet = await feetState();
       var before = await page.locator('#result').textContent();
       await page.reload();
+      check('feet setting remembered', await feetState(), beforeFeet);
       check('text remembered', await page.inputValue('#text'),
             'Header sits 7 ft 3 in above the slab');
       check('amount remembered', await page.inputValue('#amount'), '2 1/4 in');
